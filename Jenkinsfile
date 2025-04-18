@@ -36,7 +36,8 @@ spec:
 
         stage('Build') {
             steps {
-                sh '''
+                container('node') {
+                    sh '''
                         ls -la
                         node -v
                         npm -v
@@ -44,6 +45,7 @@ spec:
                         npm run build
                         ls -la
                     '''
+                }
             }
         }
     }
