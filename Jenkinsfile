@@ -31,7 +31,7 @@ spec:
 
     environment {
         AWS_REGION = 'us-east-1'
-        S3_ENDPOINT = 'http://172.30.10.11:32002'
+        S3_ENDPOINT = 'http://172.30.10.11:32001'
         S3_BUCKET = 'test'
     }
 
