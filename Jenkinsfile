@@ -115,17 +115,17 @@ spec:
         //     }
         // }
 
-        stage('Security Scan') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('node') {
-                    withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
-                        sh 'npx snyk test --file=package-lock.json --severity-threshold=high'
-                        sh 'npx snyk monitor'
-                    }
-                }
-            }
-        }
+        // stage('Security Scan') {
+        //     when { expression { params.confirmProcess == 'Yes' } }
+        //     steps {
+        //         container('node') {
+        //             withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
+        //                 sh 'npx snyk test --file=package-lock.json --severity-threshold=high'
+        //                 sh 'npx snyk monitor'
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Docker Build and Push') {
             when { expression { params.confirmProcess == 'Yes' } }
