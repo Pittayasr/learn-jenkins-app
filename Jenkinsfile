@@ -62,7 +62,7 @@ spec:
         AWS_REGION = 'us-east-1'
         S3_ENDPOINT = 'http://172.30.10.11:32001'
         S3_BUCKET = 'test'
-        HARBOR_REGISTRY = '172.30.10.101:30003'
+        HARBOR_REGISTRY = '172.30.10.11:30004'
         HARBOR_PROJECT = 'test-registry'
         IMAGE_NAME = 'test-images'
         DOCKER_HOST = "unix:///var/run/docker.sock"
@@ -187,9 +187,6 @@ spec:
 
                             echo "🐳 Build Docker image..."                          
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
-
-                            echo "🔧 Add harbor.local to /etc/hosts"
-                            echo "172.30.10.11 harbor.local" >> /etc/hosts
 
                             echo "🔐 Login to Harbor..."
                             docker login -u $HARBOR_USER -p $HARBOR_PASS $HARBOR_REGISTRY
