@@ -189,7 +189,7 @@ spec:
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
-                            docker login -u $HARBOR_USER -p $HARBOR_PASS http://${HARBOR_REGISTRY}
+                            echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin http://172.30.10.11:30004
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
