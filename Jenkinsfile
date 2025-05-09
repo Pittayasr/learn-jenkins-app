@@ -27,17 +27,28 @@ spec:
       - name: workspace-volume
         mountPath: /home/jenkins/agent
   - name: docker
-    image: docker:dind
+    image: docker:24.0-cli  
     command:
     - cat
     tty: true
+    volumeMounts:
+      - name: docker-sock
+        mountPath: /var/run/docker.sock
+  - name: dind
+    image: docker:24.0-dind
     securityContext:
-        privileged: true
+      privileged: true
+    volumeMounts:
+      - name: docker-graph
+        mountPath: /var/lib/docker
   volumes:
     - name: workspace-volume
       emptyDir: {}
-    - name: docker-volume
+    - name: docker-graph
       emptyDir: {}
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
 """
         }
     }
@@ -49,6 +60,7 @@ spec:
         HARBOR_REGISTRY = 'harbor.local'
         HARBOR_PROJECT = 'test-registry'
         IMAGE_NAME = 'test-images'
+        DOCKER_HOST = "unix:///var/run/docker.sock"
     }
 
     parameters {
@@ -137,6 +149,9 @@ spec:
                         passwordVariable: 'HARBOR_PASS'
                     )]) {
                         sh '''
+                            echo "📋 Docker version:"
+                            docker version
+
                             echo "🔧 Build Docker image..."
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
 
