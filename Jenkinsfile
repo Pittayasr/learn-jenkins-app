@@ -32,6 +32,8 @@ spec:
     - cat
     tty: true
     volumeMounts:
+      - name: workspace-volume
+        mountPath: /home/jenkins/agent
       - name: docker-sock
         mountPath: /var/run/docker.sock
   - name: dind
@@ -153,6 +155,7 @@ spec:
                             docker version
 
                             echo "🔧 Build Docker image..."
+                            cd /home/jenkins/agent
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
 
                             echo "🔐 Login to Harbor..."
