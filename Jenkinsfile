@@ -40,6 +40,9 @@ spec:
     image: docker:24.0-dind
     securityContext:
       privileged: true
+    env:
+    - name: DOCKER_EXTRA_OPTS
+      value: "--dns 172.30.10.11 --dns 8.8.8.8"
     volumeMounts:
       - name: docker-graph
         mountPath: /var/lib/docker
