@@ -41,22 +41,16 @@ spec:
     securityContext:
       privileged: true
     env:
-      - name: DOCKER_TLS_CERTDIR
-        value: ""
+    - name: DOCKER_EXTRA_OPTS
+      value: "--dns 172.30.10.11 --dns 8.8.8.8"
     volumeMounts:
       - name: docker-graph
         mountPath: /var/lib/docker
-      - name: docker-daemon-config
-        mountPath: /etc/docker/daemon.json
-        subPath: daemon.json
   volumes:
     - name: workspace-volume
       emptyDir: {}
     - name: docker-graph
       emptyDir: {}
-    - name: docker-daemon-config
-      configMap:
-        name: docker-daemon-config
     - name: docker-sock
       hostPath:
         path: /var/run/docker.sock
