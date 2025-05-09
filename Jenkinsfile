@@ -164,7 +164,8 @@ spec:
                             ls -la /home/jenkins/agent/
 
                             echo "🔧 Build Docker image..."
-                            cd /home/jenkins/agent
+                            cd /home/jenkins/agent/workspace
+                            tar -xzf build.tar.gz
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
