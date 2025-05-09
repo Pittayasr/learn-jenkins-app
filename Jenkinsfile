@@ -41,16 +41,22 @@ spec:
     securityContext:
       privileged: true
     env:
-    - name: DOCKER_EXTRA_OPTS
-      value: "--dns 172.30.10.11 --dns 8.8.8.8"
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
     volumeMounts:
       - name: docker-graph
         mountPath: /var/lib/docker
+      - name: docker-daemon-config
+        mountPath: /etc/docker/daemon.json
+        subPath: daemon.json
   volumes:
     - name: workspace-volume
       emptyDir: {}
     - name: docker-graph
       emptyDir: {}
+    - name: docker-daemon-config
+      configMap:
+        name: docker-daemon-config
     - name: docker-sock
       hostPath:
         path: /var/run/docker.sock
@@ -62,7 +68,7 @@ spec:
         AWS_REGION = 'us-east-1'
         S3_ENDPOINT = 'http://172.30.10.11:32001'
         S3_BUCKET = 'test'
-        HARBOR_REGISTRY = '172.30.10.11:30004'
+        HARBOR_REGISTRY = 'http://172.30.10.11:30004'
         HARBOR_PROJECT = 'test-registry'
         IMAGE_NAME = 'test-images'
         DOCKER_HOST = "unix:///var/run/docker.sock"
@@ -189,7 +195,7 @@ spec:
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
-                            docker login -u $HARBOR_USER -p $HARBOR_PASS $HARBOR_REGISTRY
+                            docker login -u $HARBOR_USER -p $HARBOR_PASS ${HARBOR_REGISTRY}
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
