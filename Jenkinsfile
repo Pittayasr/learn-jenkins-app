@@ -189,7 +189,7 @@ spec:
                             echo "172.30.10.11 harbor.local" >> /etc/hosts
 
                             echo "🔐 Login to Harbor..."
-                            docker login -u $HARBOR_USER --password-stdin $HARBOR_PASS $HARBOR_REGISTRY
+                            docker login -u $HARBOR_USER -p $HARBOR_PASS $HARBOR_REGISTRY
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
