@@ -74,6 +74,12 @@ spec:
     }
 
     stages {
+        stage('Checkout') {
+        steps {
+            checkout scm
+            }
+        }
+
         stage('Set Version') {
             steps {
                 script {
@@ -154,9 +160,12 @@ spec:
                             echo "📋 Docker version:"
                             docker version
 
+                            echo "🔍 Checking files in workspace:"
+                            ls -la /home/jenkins/agent/
+
                             echo "🔧 Build Docker image..."
                             cd /home/jenkins/agent
-                            docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
+                            docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
                             docker login -u $HARBOR_USER -p $HARBOR_PASS $HARBOR_REGISTRY
