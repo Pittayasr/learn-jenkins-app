@@ -171,12 +171,18 @@ spec:
                             echo "📋 Docker version:"
                             docker version
 
-                            echo "🔍 Checking files in workspace:"
-                            ls -la /home/jenkins/agent/
+                            echo "📁 Current path:"
+                            pwd
+                            echo "📄 List files:"
+                            ls -lah
 
-                            echo "🔧 Build Docker image..."
-                            cd /home/jenkins/agent/
+                            echo "🔧 Go to correct workspace"
+                            cd ${WORKSPACE}
+
+                            echo "📦 Extracting build..."
                             tar -xzf build.tar.gz
+
+                            echo "🐳 Build Docker image..."                          
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
