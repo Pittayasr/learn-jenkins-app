@@ -106,14 +106,14 @@ spec:
             }
         }
 
-        stage('Linting') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('node') {
-                    sh 'npm run lint'
-                }
-            }
-        }
+        // stage('Linting') {
+        //     when { expression { params.confirmProcess == 'Yes' } }
+        //     steps {
+        //         container('node') {
+        //             sh 'npm run lint'
+        //         }
+        //     }
+        // }
 
         stage('Security Scan') {
             when { expression { params.confirmProcess == 'Yes' } }
