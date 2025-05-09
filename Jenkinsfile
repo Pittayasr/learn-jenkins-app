@@ -95,6 +95,11 @@ spec:
                     if (params.confirmProcess == 'Yes') {
                         container('node') {
                             sh '''
+                                echo "📁 Current path:"
+                                pwd
+                                echo "📄 List files before build:"
+                                ls -alh
+
                                 npm ci
 
                                 # เพิ่ม version แบบ patch (เช่น 1.0.0 -> 1.0.1)
@@ -105,7 +110,13 @@ spec:
                                 echo $VERSION > .version.txt
 
                                 npm run build
+
+                                echo "📄 List files after build:"
+                                ls -alh
+
                                 tar -czf build.tar.gz build/
+
+                                echo "📦 Compressed build directory:"
                                 ls -lh build.tar.gz
                             '''
                         }
@@ -164,7 +175,7 @@ spec:
                             ls -la /home/jenkins/agent/
 
                             echo "🔧 Build Docker image..."
-                            cd /home/jenkins/agent/workspace
+                            cd /home/jenkins/agent/
                             tar -xzf build.tar.gz
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
