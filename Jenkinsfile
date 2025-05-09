@@ -62,7 +62,7 @@ spec:
         AWS_REGION = 'us-east-1'
         S3_ENDPOINT = 'http://172.30.10.11:32001'
         S3_BUCKET = 'test'
-        HARBOR_REGISTRY = 'http://172.30.10.11:30004'
+        HARBOR_REGISTRY = '172.30.10.11:30004'
         HARBOR_PROJECT = 'test-registry'
         IMAGE_NAME = 'test-images'
         DOCKER_HOST = "unix:///var/run/docker.sock"
@@ -189,7 +189,7 @@ spec:
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
-                            docker login -u $HARBOR_USER -p $HARBOR_PASS ${HARBOR_REGISTRY}
+                            docker login -u $HARBOR_USER -p $HARBOR_PASS http://${HARBOR_REGISTRY}
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
