@@ -41,7 +41,7 @@ spec:
         mountPath: /home/jenkins/agent
       - name: docker-sock
         mountPath: /var/run/docker.sock
-      - name: harbor-ca
+      - name: harbor-ca-cert
         mountPath: /usr/local/share/ca-certificates/extra/
   - name: dind
     image: docker:24.0-dind
