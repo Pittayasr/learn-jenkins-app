@@ -101,8 +101,8 @@ spec:
 
             archiveArtifacts artifacts: 'build*.tar.gz', allowEmptyArchive: true
             archiveArtifacts artifacts: '.version.txt', allowEmptyArchive: true
-    }
-}
+            }
+        }
 
         
         stage('Check ping and Curl') {
@@ -126,44 +126,44 @@ spec:
             }
         }
 
-        stage('Install & Build') {
-            steps {
-                script {
-                    if (params.confirmProcess == 'Yes') {
-                        container('node') {
-                            sh '''
-                                echo "📁 Current path:"
-                                pwd
-                                echo "📄 List files before build:"
-                                ls -alh
+        // stage('Install & Build') {
+        //     steps {
+        //         script {
+        //             if (params.confirmProcess == 'Yes') {
+        //                 container('node') {
+        //                     sh '''
+        //                         echo "📁 Current path:"
+        //                         pwd
+        //                         echo "📄 List files before build:"
+        //                         ls -alh
 
-                                npm ci
+        //                         npm ci
 
-                                # เพิ่ม version แบบ patch (เช่น 1.0.0 -> 1.0.1)
-                                npm version patch --no-git-tag-version
+        //                         # เพิ่ม version แบบ patch (เช่น 1.0.0 -> 1.0.1)
+        //                         npm version patch --no-git-tag-version
 
-                                VERSION=$(node -p "require('./package.json').version")
-                                echo "🔖 New version: $VERSION"
-                                echo $VERSION > .version.txt
+        //                         VERSION=$(node -p "require('./package.json').version")
+        //                         echo "🔖 New version: $VERSION"
+        //                         echo $VERSION > .version.txt
 
-                                npm run build
+        //                         npm run build
 
-                                echo "📄 List files after build:"
-                                ls -alh
+        //                         echo "📄 List files after build:"
+        //                         ls -alh
 
-                                tar -czf build.tar.gz build/
+        //                         tar -czf build.tar.gz build/
 
-                                echo "📦 Compressed build directory:"
-                                ls -lh build.tar.gz
-                            '''
-                        }
-                    } else {
-                        echo "Build cancelled."
-                        error('Build cancelled by user.')
-                    }
-                }
-            }
-        }
+        //                         echo "📦 Compressed build directory:"
+        //                         ls -lh build.tar.gz
+        //                     '''
+        //                 }
+        //             } else {
+        //                 echo "Build cancelled."
+        //                 error('Build cancelled by user.')
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Test') {
             when { expression { params.confirmProcess == 'Yes' } }
@@ -195,71 +195,71 @@ spec:
         //     }
         // }
 
-        stage('Upload to MinIO') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('awscli') {
-                    withCredentials([
-                        string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                    ]) {
-                        sh '''
-                            VERSION=$(cat .version.txt)
-                            echo "📦 Uploading build-v$VERSION.tar.gz to MinIO..."
+        // stage('Upload to MinIO') {
+        //     when { expression { params.confirmProcess == 'Yes' } }
+        //     steps {
+        //         container('awscli') {
+        //             withCredentials([
+        //                 string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
+        //                 string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+        //             ]) {
+        //                 sh '''
+        //                     VERSION=$(cat .version.txt)
+        //                     echo "📦 Uploading build-v$VERSION.tar.gz to MinIO..."
 
-                            mv build.tar.gz build-v$VERSION.tar.gz
+        //                     mv build.tar.gz build-v$VERSION.tar.gz
 
-                            aws --endpoint-url $S3_ENDPOINT \
-                                s3 cp build-v$VERSION.tar.gz s3://$S3_BUCKET/build-v$VERSION.tar.gz
-                        '''
-                    }
-                }
-            }
-        }
+        //                     aws --endpoint-url $S3_ENDPOINT \
+        //                         s3 cp build-v$VERSION.tar.gz s3://$S3_BUCKET/build-v$VERSION.tar.gz
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
 
 
-        stage('Docker Build and Push') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('docker') {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'HARBOR_CREDENTIALS',
-                        usernameVariable: 'HARBOR_USER',
-                        passwordVariable: 'HARBOR_PASS'
-                    )]) {
-                        sh '''
-                            echo "📋 Docker version:"
-                            docker version
+        // stage('Docker Build and Push') {
+        //     when { expression { params.confirmProcess == 'Yes' } }
+        //     steps {
+        //         container('docker') {
+        //             withCredentials([usernamePassword(
+        //                 credentialsId: 'HARBOR_CREDENTIALS',
+        //                 usernameVariable: 'HARBOR_USER',
+        //                 passwordVariable: 'HARBOR_PASS'
+        //             )]) {
+        //                 sh '''
+        //                     echo "📋 Docker version:"
+        //                     docker version
 
-                            echo "📁 Current path:"
-                            pwd
-                            echo "📄 List files:"
-                            ls -lah
+        //                     echo "📁 Current path:"
+        //                     pwd
+        //                     echo "📄 List files:"
+        //                     ls -lah
 
-                            echo "🛠️ Installing CA tools..."
-                            apk add --no-cache ca-certificates
+        //                     echo "🛠️ Installing CA tools..."
+        //                     apk add --no-cache ca-certificates
                             
-                            echo "🛠️ Update trusted certs..."
-                            update-ca-certificates
+        //                     echo "🛠️ Update trusted certs..."
+        //                     update-ca-certificates
 
-                            echo "🔧 Go to correct workspace"
-                            cd ${WORKSPACE}
+        //                     echo "🔧 Go to correct workspace"
+        //                     cd ${WORKSPACE}
 
-                            echo "📦 Extracting build..."
-                            tar -xzf build.tar.gz
+        //                     echo "📦 Extracting build..."
+        //                     tar -xzf build.tar.gz
 
-                            echo "🐳 Build Docker image..."                          
-                            docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+        //                     echo "🐳 Build Docker image..."                          
+        //                     docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
-                            echo "🔐 Login to Harbor..."
-                            echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
+        //                     echo "🔐 Login to Harbor..."
+        //                     echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
 
-                            echo "📦 Push Docker image to Harbor..."
-                            docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
-                        '''
-                    }
-                }
-            }
-        }
+        //                     echo "📦 Push Docker image to Harbor..."
+        //                     docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
     }
 }
