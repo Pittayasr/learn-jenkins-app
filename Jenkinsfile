@@ -41,15 +41,8 @@ spec:
     securityContext:
       privileged: true
     env:
-    - name: DOCKER_EXTRA_OPTS
-      value: "--dns 172.30.10.11 --dns 8.8.8.8"
     - name: DOCKER_TLS_CERTDIR
-        value: ""    # ปิด TLS
-    command:
-    - dockerd
-    - --host=tcp://0.0.0.0:2375
-    - --host=unix:///var/run/docker.sock
-    - --insecure-registry=172.30.10.11:30004    
+        value: ""    # ปิด TLS  
     volumeMounts:
       - name: docker-graph
         mountPath: /var/lib/docker
