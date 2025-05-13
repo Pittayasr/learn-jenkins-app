@@ -82,6 +82,18 @@ spec:
             checkout scm
             }
         }
+        
+        stage('Check ping and Curl') {
+        steps {
+            sh '''
+                echo "🔍 Testing DNS:"
+                ping -c 3 harbor.local.com || true
+
+                echo "🔍 Testing curl:"
+                curl -v https://harbor.local.com || true
+            '''
+            }
+        }
 
         // stage('Set Version') {
         //     steps {
@@ -178,38 +190,43 @@ spec:
         //     }
         // }
 
-        stage('Docker Build and Push') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('docker') {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'HARBOR_CREDENTIALS',
-                        usernameVariable: 'HARBOR_USER',
-                        passwordVariable: 'HARBOR_PASS'
-                    )]) {
-                        sh '''
-                            echo "📋 Docker version:"
-                            docker version
+        // stage('Docker Build and Push') {
+        //     when { expression { params.confirmProcess == 'Yes' } }
+        //     steps {
+        //         container('docker') {
+        //             withCredentials([usernamePassword(
+        //                 credentialsId: 'HARBOR_CREDENTIALS',
+        //                 usernameVariable: 'HARBOR_USER',
+        //                 passwordVariable: 'HARBOR_PASS'
+        //             )]) {
+        //                 sh '''
+        //                     echo "📋 Docker version:"
+        //                     docker version
 
-                            echo "📁 Current path:"
-                            pwd
-                            echo "📄 List files:"
-                            ls -lah
+        //                     echo "📁 Current path:"
+        //                     pwd
+        //                     echo "📄 List files:"
+        //                     ls -lah
 
-                            echo "🔧 Go to correct workspace"
-                            cd ${WORKSPACE}
+        //                     echo "🔧 Go to correct workspace"
+        //                     cd ${WORKSPACE}
 
-                            
+        //                     echo "📦 Extracting build..."
+        //                     tar -xzf build.tar.gz
 
-                            echo "🔐 Login to Harbor..."
-                            echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
+        //                     echo "🐳 Build Docker image..."                          
+        //                     docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
-                            
-                        '''
-                    }
-                }
-            }
-        }
+        //                     echo "🔐 Login to Harbor..."
+        //                     echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
+
+        //                     echo "📦 Push Docker image to Harbor..."
+        //                     docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     post {
