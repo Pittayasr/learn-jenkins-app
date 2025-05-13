@@ -62,7 +62,7 @@ spec:
         AWS_REGION = 'us-east-1'
         S3_ENDPOINT = 'http://172.30.10.11:32001'
         S3_BUCKET = 'test'
-        HARBOR_REGISTRY = '172.30.10.11:30004'
+        HARBOR_REGISTRY = 'harbor.local'
         HARBOR_PROJECT = 'test-registry'
         IMAGE_NAME = 'test-images'
         DOCKER_HOST = "unix:///var/run/docker.sock"
@@ -161,6 +161,23 @@ spec:
         //     }
         // }
 
+        stage('Upload to MinIO') {
+            when { expression { params.confirmProcess == 'Yes' } }
+            steps {
+                container('awscli') {
+                    withCredentials([
+                        string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
+                        sh '''
+                            aws --endpoint-url $S3_ENDPOINT \
+                                s3 cp build.tar.gz s3://$S3_BUCKET/build.tar.gz
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Docker Build and Push') {
             when { expression { params.confirmProcess == 'Yes' } }
             steps {
@@ -193,23 +210,6 @@ spec:
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Upload to MinIO') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('awscli') {
-                    withCredentials([
-                        string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                    ]) {
-                        sh '''
-                            aws --endpoint-url $S3_ENDPOINT \
-                                s3 cp build.tar.gz s3://$S3_BUCKET/build.tar.gz
                         '''
                     }
                 }
