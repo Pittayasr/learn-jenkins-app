@@ -31,24 +31,18 @@ spec:
     command:
     - cat
     tty: true
-    env:
-    - name: DOCKER_HOST
-      value: tcp://localhost:2375  # ใช้ Docker ของ dind
     volumeMounts:
       - name: workspace-volume
         mountPath: /home/jenkins/agent
+      - name: docker-sock
+        mountPath: /var/run/docker.sock
   - name: dind
     image: docker:24.0-dind
     securityContext:
       privileged: true
     env:
-    - name: DOCKER_TLS_CERTDIR
-      value: ""    # ปิด TLS
-    command:
-    - dockerd
-    - --host=tcp://0.0.0.0:2375
-    - --host=unix:///var/run/docker.sock
-    - --insecure-registry=172.30.10.11:30004  
+    - name: DOCKER_EXTRA_OPTS
+      value: "--dns 172.30.10.11 --dns 8.8.8.8"
     volumeMounts:
       - name: docker-graph
         mountPath: /var/lib/docker
@@ -195,7 +189,7 @@ spec:
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
-                            docker login -u $HARBOR_USER -p $HARBOR_PASS 172.30.10.11:30004
+                            echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin http://172.30.10.11:30004
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
