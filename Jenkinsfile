@@ -8,7 +8,7 @@ spec:
   hostAliases:
   - ip: "172.30.10.11"
     hostnames:
-    - "harbor.local"
+    - "harbor.local.com"
   containers:
   - name: node
     image: node:18-alpine
@@ -62,7 +62,7 @@ spec:
         AWS_REGION = 'us-east-1'
         S3_ENDPOINT = 'http://172.30.10.11:32001'
         S3_BUCKET = 'test'
-        HARBOR_REGISTRY = 'harbor.local'
+        HARBOR_REGISTRY = 'harbor.local.com'
         HARBOR_PROJECT = 'test-registry'
         IMAGE_NAME = 'test-images'
         DOCKER_HOST = "unix:///var/run/docker.sock"
