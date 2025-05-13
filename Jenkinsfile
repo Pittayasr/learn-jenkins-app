@@ -43,6 +43,13 @@ spec:
     env:
     - name: DOCKER_EXTRA_OPTS
       value: "--dns 172.30.10.11 --dns 8.8.8.8"
+    - name: DOCKER_TLS_CERTDIR
+        value: ""    # ปิด TLS
+    command:
+    - dockerd
+    - --host=tcp://0.0.0.0:2375
+    - --host=unix:///var/run/docker.sock
+    - --insecure-registry=172.30.10.11:30004    
     volumeMounts:
       - name: docker-graph
         mountPath: /var/lib/docker
@@ -189,7 +196,7 @@ spec:
                             docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
                             echo "🔐 Login to Harbor..."
-                            docker login -u $HARBOR_USER -p $HARBOR_PASS http://${HARBOR_REGISTRY}
+                            docker login -u $HARBOR_USER -p $HARBOR_PASS ${HARBOR_REGISTRY}
 
                             echo "📦 Push Docker image to Harbor..."
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
