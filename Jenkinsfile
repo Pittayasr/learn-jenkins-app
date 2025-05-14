@@ -35,12 +35,12 @@ pipeline {
 
         stage('Archive Artifacts') {
         steps {
-            container('node') {
+            // container('node') {
                 sh '''
                     VERSION=$(cat .version.txt)
                     cp build.tar.gz build-v$VERSION.tar.gz
                 '''
-            }
+            // }
 
             archiveArtifacts artifacts: 'build*.tar.gz', allowEmptyArchive: true
             archiveArtifacts artifacts: '.version.txt', allowEmptyArchive: true
