@@ -114,6 +114,14 @@ pipeline {
                 )]) {
                     script {
                         try {
+                            IMAGE_TAG = ''
+                            if (fileExists('.version.txt')) {
+                                IMAGE_TAG = readFile('.version.txt').trim()
+                            } else {
+                                IMAGE_TAG = "${env.BUILD_NUMBER}"
+                            }
+                            env.IMAGE_TAG = IMAGE_TAG
+
                             sh '''
                                 echo "📋 Docker version:"
                                 docker version
