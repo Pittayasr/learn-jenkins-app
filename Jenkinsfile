@@ -21,51 +21,21 @@ pipeline {
 
     stages {
         stage('Test Docker Access') {
-        steps {
-            sh 'docker version'
-            sh 'docker ps'
+            steps {
+                script {
+                    try {
+                        sh 'docker version'
+                        sh 'docker ps'
+                    } catch (Exception e) {
+                        error("Docker is not accessible. Please check Docker permissions and socket mounting.")
+                    }
+                }
             }
         }
 
         stage('Checkout') {
-        steps {
-            checkout scm
-            }
-        }
-
-        stage('Archive Artifacts') {
-        steps {
-            // container('node') {
-                sh '''
-                    VERSION=$(cat .version.txt)
-                    cp build.tar.gz build-v$VERSION.tar.gz
-                '''
-            // }
-
-            archiveArtifacts artifacts: 'build*.tar.gz', allowEmptyArchive: true
-            archiveArtifacts artifacts: '.version.txt', allowEmptyArchive: true
-            }
-        }
-
-        
-        stage('Check ping and Curl') {
-        steps {
-            sh '''
-                echo "🔍 Testing DNS:"
-                ping -c 3 harbor.local.com || true
-
-                echo "🔍 Testing curl:"
-                curl -v https://harbor.local.com || true
-            '''
-            }
-        }
-
-        stage('Set Version') {
             steps {
-                script {
-                    // ใช้ BUILD_NUMBER เป็น tag
-                    env.IMAGE_TAG = "v${env.BUILD_NUMBER}"
-                }
+                checkout scm
             }
         }
 
@@ -73,33 +43,31 @@ pipeline {
             steps {
                 script {
                     if (params.confirmProcess == 'Yes') {
-                        // container('node') {
-                            sh '''
-                                echo "📁 Current path:"
-                                pwd
-                                echo "📄 List files before build:"
-                                ls -alh
+                        sh '''
+                            echo "📁 Current path:"
+                            pwd
+                            echo "📄 List files before build:"
+                            ls -alh
 
-                                npm ci
+                            npm ci
 
-                                # เพิ่ม version แบบ patch (เช่น 1.0.0 -> 1.0.1)
-                                npm version patch --no-git-tag-version
+                            # เพิ่ม version แบบ patch (เช่น 1.0.0 -> 1.0.1)
+                            npm version patch --no-git-tag-version
 
-                                VERSION=$(node -p "require('./package.json').version")
-                                echo "🔖 New version: $VERSION"
-                                echo $VERSION > .version.txt
+                            VERSION=$(node -p "require('./package.json').version")
+                            echo "🔖 New version: $VERSION"
+                            echo $VERSION > .version.txt
 
-                                npm run build
+                            npm run build
 
-                                echo "📄 List files after build:"
-                                ls -alh
+                            echo "📄 List files after build:"
+                            ls -alh
 
-                                tar -czf build.tar.gz build/
+                            tar -czf build.tar.gz build/
 
-                                echo "📦 Compressed build directory:"
-                                ls -lh build.tar.gz
-                            '''
-                        // }
+                            echo "📦 Compressed build directory:"
+                            ls -lh build.tar.gz
+                        '''
                     } else {
                         echo "Build cancelled."
                         error('Build cancelled by user.')
@@ -108,101 +76,73 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            when { expression { params.confirmProcess == 'Yes' } }
+        stage('Archive Artifacts') {
             steps {
-                // container('node') {
-                    sh 'npm test'
-                // }
+                sh '''
+                    # ตรวจสอบว่ามีไฟล์ .version.txt จริงหรือไม่
+                    if [ -f .version.txt ]; then
+                        VERSION=$(cat .version.txt)
+                        cp build.tar.gz build-v$VERSION.tar.gz
+                    else
+                        echo "⚠️ Warning: .version.txt not found, using build number instead"
+                        cp build.tar.gz build-v${BUILD_NUMBER}.tar.gz
+                    fi
+                '''
+                archiveArtifacts artifacts: 'build*.tar.gz', allowEmptyArchive: true
+                archiveArtifacts artifacts: '.version.txt', allowEmptyArchive: true
             }
         }
 
-        // stage('Linting') {
-        //     when { expression { params.confirmProcess == 'Yes' } }
-        //     steps {
-        //         container('node') {
-        //             sh 'npm run lint'
-        //         }
-        //     }
-        // }
-
-        // stage('Security Scan') {
-        //     when { expression { params.confirmProcess == 'Yes' } }
-        //     steps {
-        //         container('node') {
-        //             withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN')]) {
-        //                 sh 'npx snyk test --file=package-lock.json --severity-threshold=high'
-        //                 sh 'npx snyk monitor'
-        //             }
-        //         }
-        //     }
-        // }
-
-        // stage('Upload to MinIO') {
-        //     when { expression { params.confirmProcess == 'Yes' } }
-        //     steps {
-        //         container('awscli') {
-        //             withCredentials([
-        //                 string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
-        //                 string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //             ]) {
-        //                 sh '''
-        //                     VERSION=$(cat .version.txt)
-        //                     echo "📦 Uploading build-v$VERSION.tar.gz to MinIO..."
-
-        //                     mv build.tar.gz build-v$VERSION.tar.gz
-
-        //                     aws --endpoint-url $S3_ENDPOINT \
-        //                         s3 cp build-v$VERSION.tar.gz s3://$S3_BUCKET/build-v$VERSION.tar.gz
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
-
+        stage('Test') {
+            when { expression { params.confirmProcess == 'Yes' } }
+            steps {
+                sh 'npm test'
+            }
+        }
 
         stage('Docker Build and Push') {
             when { expression { params.confirmProcess == 'Yes' } }
             steps {
-                // container('docker') {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'HARBOR_CREDENTIALS',
-                        usernameVariable: 'HARBOR_USER',
-                        passwordVariable: 'HARBOR_PASS'
-                    )]) {
-                        sh '''
-                            echo "📋 Docker version:"
-                            docker version
+                withCredentials([usernamePassword(
+                    credentialsId: 'HARBOR_CREDENTIALS',
+                    usernameVariable: 'HARBOR_USER',
+                    passwordVariable: 'HARBOR_PASS'
+                )]) {
+                    script {
+                        try {
+                            sh '''
+                                echo "📋 Docker version:"
+                                docker version
 
-                            echo "📁 Current path:"
-                            pwd
-                            echo "📄 List files:"
-                            ls -lah
+                                echo "🐳 Building Docker image..."
+                                docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
 
-                            echo "🛠️ Installing CA tools..."
-                            apk add --no-cache ca-certificates
-                            
-                            echo "🛠️ Update trusted certs..."
-                            update-ca-certificates
+                                echo "🔐 Logging in to Harbor registry..."
+                                echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
 
-                            echo "🔧 Go to correct workspace"
-                            cd ${WORKSPACE}
+                                echo "📦 Pushing Docker image to Harbor..."
+                                docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
 
-                            echo "📦 Extracting build..."
-                            tar -xzf build.tar.gz
-
-                            echo "🐳 Build Docker image..."                          
-                            docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
-
-                            echo "🔐 Login to Harbor..."
-                            echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
-
-                            echo "📦 Push Docker image to Harbor..."
-                            docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
-                        '''
+                                echo "✅ Image pushed successfully: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}"
+                            '''
+                        } catch (Exception e) {
+                            error("Failed to build or push Docker image: ${e.getMessage()}")
+                        }
                     }
-                // }
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline completed - ${currentBuild.result}"
+        }
+        success {
+            echo "Pipeline succeeded!"
+        }
+        failure {
+            echo "Pipeline failed!"
         }
     }
 }
