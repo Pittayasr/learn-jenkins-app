@@ -1,73 +1,5 @@
 pipeline {
-    agent {
-//         kubernetes {
-//             yaml """
-// apiVersion: v1
-// kind: Pod
-// spec:
-//   hostAliases:
-//   - ip: "172.30.10.11"
-//     hostnames:
-//     - "harbor.local.com"
-//   volumes:
-//   - name: harbor-ca-cert
-//     configMap:
-//       name: harbor-ca-cert
-
-//   containers:
-//   - name: node
-//     image: node:18-alpine
-//     command:
-//     - cat
-//     tty: true
-//     volumeMounts:
-//       - name: workspace-volume
-//         mountPath: /home/jenkins/agent
-//   - name: awscli
-//     image: amazon/aws-cli
-//     command:
-//     - cat
-//     tty: true
-//     volumeMounts:
-//       - name: workspace-volume
-//         mountPath: /home/jenkins/agent
-//   - name: docker
-//     image: docker:24.0-cli  
-//     command:
-//     - cat
-//     tty: true
-//     volumeMounts:
-//       - name: workspace-volume
-//         mountPath: /home/jenkins/agent
-//       - name: docker-sock
-//         mountPath: /var/run/docker.sock
-//       - name: harbor-ca-cert
-//         mountPath: /usr/local/share/ca-certificates/extra/
-//   - name: dind
-//     image: docker:24.0-dind
-//     securityContext:
-//       privileged: true
-//     env:
-//     - name: DOCKER_EXTRA_OPTS
-//       value: "--dns 172.30.10.11 --dns 8.8.8.8"
-//     volumeMounts:
-//       - name: docker-graph
-//         mountPath: /var/lib/docker
-//   volumes:
-//     - name: workspace-volume
-//       emptyDir: {}
-//     - name: docker-graph
-//       emptyDir: {}
-//     - name: docker-sock
-//       hostPath:
-//         path: /var/run/docker.sock
-// """
-        // }
-        docker {
-            image 'node:18-alpine'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     environment {
         AWS_REGION = 'us-east-1'
@@ -85,6 +17,15 @@ pipeline {
             choices: ['Yes', 'No'],
             description: 'Confirm to proceed?'
         )
+    }
+
+    stages {
+        stage('Test Docker Access') {
+        steps {
+            sh 'docker version'
+            sh 'docker ps'
+            }
+        }
     }
 
     stages {
