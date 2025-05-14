@@ -26,9 +26,7 @@ pipeline {
             sh 'docker ps'
             }
         }
-    }
 
-    stages {
         stage('Checkout') {
         steps {
             checkout scm
