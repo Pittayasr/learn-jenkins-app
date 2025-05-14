@@ -1,67 +1,71 @@
 pipeline {
     agent {
-        kubernetes {
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  hostAliases:
-  - ip: "172.30.10.11"
-    hostnames:
-    - "harbor.local.com"
-  volumes:
-  - name: harbor-ca-cert
-    configMap:
-      name: harbor-ca-cert
+//         kubernetes {
+//             yaml """
+// apiVersion: v1
+// kind: Pod
+// spec:
+//   hostAliases:
+//   - ip: "172.30.10.11"
+//     hostnames:
+//     - "harbor.local.com"
+//   volumes:
+//   - name: harbor-ca-cert
+//     configMap:
+//       name: harbor-ca-cert
 
-  containers:
-  - name: node
-    image: node:18-alpine
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-      - name: workspace-volume
-        mountPath: /home/jenkins/agent
-  - name: awscli
-    image: amazon/aws-cli
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-      - name: workspace-volume
-        mountPath: /home/jenkins/agent
-  - name: docker
-    image: docker:24.0-cli  
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-      - name: workspace-volume
-        mountPath: /home/jenkins/agent
-      - name: docker-sock
-        mountPath: /var/run/docker.sock
-      - name: harbor-ca-cert
-        mountPath: /usr/local/share/ca-certificates/extra/
-  - name: dind
-    image: docker:24.0-dind
-    securityContext:
-      privileged: true
-    env:
-    - name: DOCKER_EXTRA_OPTS
-      value: "--dns 172.30.10.11 --dns 8.8.8.8"
-    volumeMounts:
-      - name: docker-graph
-        mountPath: /var/lib/docker
-  volumes:
-    - name: workspace-volume
-      emptyDir: {}
-    - name: docker-graph
-      emptyDir: {}
-    - name: docker-sock
-      hostPath:
-        path: /var/run/docker.sock
-"""
+//   containers:
+//   - name: node
+//     image: node:18-alpine
+//     command:
+//     - cat
+//     tty: true
+//     volumeMounts:
+//       - name: workspace-volume
+//         mountPath: /home/jenkins/agent
+//   - name: awscli
+//     image: amazon/aws-cli
+//     command:
+//     - cat
+//     tty: true
+//     volumeMounts:
+//       - name: workspace-volume
+//         mountPath: /home/jenkins/agent
+//   - name: docker
+//     image: docker:24.0-cli  
+//     command:
+//     - cat
+//     tty: true
+//     volumeMounts:
+//       - name: workspace-volume
+//         mountPath: /home/jenkins/agent
+//       - name: docker-sock
+//         mountPath: /var/run/docker.sock
+//       - name: harbor-ca-cert
+//         mountPath: /usr/local/share/ca-certificates/extra/
+//   - name: dind
+//     image: docker:24.0-dind
+//     securityContext:
+//       privileged: true
+//     env:
+//     - name: DOCKER_EXTRA_OPTS
+//       value: "--dns 172.30.10.11 --dns 8.8.8.8"
+//     volumeMounts:
+//       - name: docker-graph
+//         mountPath: /var/lib/docker
+//   volumes:
+//     - name: workspace-volume
+//       emptyDir: {}
+//     - name: docker-graph
+//       emptyDir: {}
+//     - name: docker-sock
+//       hostPath:
+//         path: /var/run/docker.sock
+// """
+        // }
+        docker {
+            image 'node:18-alpine'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
@@ -130,7 +134,7 @@ spec:
             steps {
                 script {
                     if (params.confirmProcess == 'Yes') {
-                        container('node') {
+                        // container('node') {
                             sh '''
                                 echo "📁 Current path:"
                                 pwd
@@ -156,7 +160,7 @@ spec:
                                 echo "📦 Compressed build directory:"
                                 ls -lh build.tar.gz
                             '''
-                        }
+                        // }
                     } else {
                         echo "Build cancelled."
                         error('Build cancelled by user.')
@@ -168,9 +172,9 @@ spec:
         stage('Test') {
             when { expression { params.confirmProcess == 'Yes' } }
             steps {
-                container('node') {
+                // container('node') {
                     sh 'npm test'
-                }
+                // }
             }
         }
 
@@ -195,33 +199,33 @@ spec:
         //     }
         // }
 
-        stage('Upload to MinIO') {
-            when { expression { params.confirmProcess == 'Yes' } }
-            steps {
-                container('awscli') {
-                    withCredentials([
-                        string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                    ]) {
-                        sh '''
-                            VERSION=$(cat .version.txt)
-                            echo "📦 Uploading build-v$VERSION.tar.gz to MinIO..."
+        // stage('Upload to MinIO') {
+        //     when { expression { params.confirmProcess == 'Yes' } }
+        //     steps {
+        //         container('awscli') {
+        //             withCredentials([
+        //                 string(credentialsId: 'MINIO_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
+        //                 string(credentialsId: 'MINIO_SECRET_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+        //             ]) {
+        //                 sh '''
+        //                     VERSION=$(cat .version.txt)
+        //                     echo "📦 Uploading build-v$VERSION.tar.gz to MinIO..."
 
-                            mv build.tar.gz build-v$VERSION.tar.gz
+        //                     mv build.tar.gz build-v$VERSION.tar.gz
 
-                            aws --endpoint-url $S3_ENDPOINT \
-                                s3 cp build-v$VERSION.tar.gz s3://$S3_BUCKET/build-v$VERSION.tar.gz
-                        '''
-                    }
-                }
-            }
-        }
+        //                     aws --endpoint-url $S3_ENDPOINT \
+        //                         s3 cp build-v$VERSION.tar.gz s3://$S3_BUCKET/build-v$VERSION.tar.gz
+        //                 '''
+        //             }
+        //         }
+        //     }
+        // }
 
 
         stage('Docker Build and Push') {
             when { expression { params.confirmProcess == 'Yes' } }
             steps {
-                container('docker') {
+                // container('docker') {
                     withCredentials([usernamePassword(
                         credentialsId: 'HARBOR_CREDENTIALS',
                         usernameVariable: 'HARBOR_USER',
@@ -258,7 +262,7 @@ spec:
                             docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
                         '''
                     }
-                }
+                // }
             }
         }
     }
