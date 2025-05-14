@@ -1,6 +1,10 @@
 pipeline {
     agent any
-
+    
+    tools {
+        nodejs "NodeJS_18"
+    }
+    
     environment {
         AWS_REGION = 'us-east-1'
         S3_ENDPOINT = 'http://172.30.10.11:32001'
