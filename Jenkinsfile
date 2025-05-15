@@ -144,6 +144,43 @@ pipeline {
                 }
             }
         }
+
+        stage('Update Kubernetes Manifest') {
+            when { expression { params.confirmProcess == 'Yes' } }
+            steps {
+                script {
+                    // กำหนดค่าตัวแปร
+                    def MANIFEST_REPO = "https://gitlab.com/Pittayasr/k8s-manifests.git"
+                    def GIT_CREDS = "GITLAB_CREDENTIALS" // Credential ของ Git ใน Jenkins
+                    def IMAGE_TAG = readFile('.version.txt').trim() // หรือใช้ env.BUILD_NUMBER
+
+                    // Clone Kubernetes Manifests Repo
+                    dir('k8s-manifests') {
+                        git url: MANIFEST_REPO, credentialsId: GIT_CREDS, branch: 'main'
+
+                        // แทนที่ VERSION ในไฟล์ deployment.yaml ด้วย Image Tag จริง
+                        sh """
+                            sed -i 's|harbor.local.com/test-registry/test-images:VERSION|harbor.local.com/test-registry/test-images:${IMAGE_TAG}|g' deployment.yaml
+                        """
+
+                        // Commit & Push การเปลี่ยนแปลง
+                        withCredentials([usernamePassword(
+                            credentialsId: GIT_CREDS,
+                            usernameVariable: 'GIT_USER',
+                            passwordVariable: 'GIT_PASSWORD'
+                        )]) {
+                            sh """
+                                        git config user.name "Jenkins Bot"
+                                        git config user.email "jenkins@example.com"
+                                        git add deployment.yaml
+                                        git commit -m "[Jenkins] Update image to ${IMAGE_TAG}"
+                                        git push https://${GIT_USER}:${GIT_PASSWORD}@github.com/Pittayasr/k8s-manifests.git HEAD:main
+                            """
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
