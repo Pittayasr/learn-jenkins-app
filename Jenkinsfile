@@ -169,13 +169,13 @@ pipeline {
                             usernameVariable: 'GIT_USER',
                             passwordVariable: 'GIT_PASSWORD'
                         )]) {
-                            sh """
+                            sh '''
                                         git config user.name "Jenkins Bot"
                                         git config user.email "jenkins@example.com"
                                         git add deployment.yaml
-                                        git commit -m "[Jenkins] Update image to ${IMAGE_TAG}"
-                                        git push https://${GIT_USER}:${GIT_PASSWORD}@gitlab.com/Pittayasr/k8s-manifests.git HEAD:main
-                            """
+                                        git diff --cached --quiet || git commit -m "[Jenkins] Update image to '$IMAGE_TAG'"
+                                        git push https://$GIT_USER:$GIT_PASSWORD@gitlab.com/Pittayasr/k8s-manifests.git HEAD:main
+                            '''
                         }
                     }
                 }
