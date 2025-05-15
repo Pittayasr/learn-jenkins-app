@@ -174,7 +174,7 @@ pipeline {
                                         git config user.email "jenkins@example.com"
                                         git add deployment.yaml
                                         git commit -m "[Jenkins] Update image to ${IMAGE_TAG}"
-                                        git push https://${GIT_USER}:${GIT_PASSWORD}@github.com/Pittayasr/k8s-manifests.git HEAD:main
+                                        git push https://${GIT_USER}:${GIT_PASSWORD}@gitlab.com/Pittayasr/k8s-manifests.git HEAD:main
                             """
                         }
                     }
