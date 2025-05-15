@@ -16,17 +16,11 @@ COPY . .
 # สร้าง production build
 RUN npm run build
 
-# ใช้ Nginx สำหรับ serve แอป
-FROM nginx:alpine
-
-# คัดลอกไฟล์ build ไปยัง directory ของ Nginx
-COPY --from=build /app/build /usr/share/nginx/html
-
 # คัดลอกไฟล์ default.conf เพื่อกำหนดค่า Nginx (ถ้ามี)
 # COPY default.conf /etc/nginx/conf.d/default.conf
 
-# เปิดพอร์ต 80
-EXPOSE 80
+# เปิดพอร์ต 3000
+EXPOSE 3000
 
 # คำสั่งเริ่มต้น
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]
