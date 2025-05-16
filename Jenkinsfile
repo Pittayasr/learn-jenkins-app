@@ -21,6 +21,12 @@ pipeline {
             choices: ['Yes', 'No'],
             description: 'Confirm to proceed?'
         )
+
+        string(
+            name: 'customVersion',
+            defaultValue: '',
+            description: 'Custom version (e.g. 1.2.3) — leave blank to auto-increment'
+        )
     }
 
     stages {
@@ -55,8 +61,13 @@ pipeline {
 
                             npm ci
 
-                            # เพิ่ม version แบบ patch (เช่น 1.0.0 -> 1.0.1)
-                            npm version patch --no-git-tag-version
+                            if [ -n "$customVersion" ]; then
+                                echo "⚙️ Using custom version: $customVersion"
+                                npm version $customVersion --no-git-tag-version
+                            else
+                                echo "🔁 Auto incrementing version (patch)"
+                                npm version patch --no-git-tag-version
+                            fi
 
                             VERSION=$(node -p "require('./package.json').version")
                             echo "🔖 New version: $VERSION"
