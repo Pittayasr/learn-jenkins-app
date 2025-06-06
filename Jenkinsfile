@@ -6,12 +6,9 @@ pipeline {
     }
     
     environment {
-        AWS_REGION = 'us-east-1'
-        S3_ENDPOINT = 'http://172.30.10.11:32001'
-        S3_BUCKET = 'test'
-        HARBOR_REGISTRY = 'harbor.local.com'
-        HARBOR_PROJECT = 'test-registry'
+        IMAGE_REGISTRY = '172.30.10.11:5000' // หรือ port registry ที่คุณใช้จริง เช่น 5000
         IMAGE_NAME = 'test-images'
+        IMAGE_PROJECT = 'test-registry' // ถ้าไม่ได้แยก project prefix ใน registry นี้ ให้ลบ
         DOCKER_HOST = "unix:///var/run/docker.sock"
     }
 
@@ -118,43 +115,28 @@ pipeline {
         stage('Docker Build and Push') {
             when { expression { params.confirmProcess == 'Yes' } }
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'HARBOR_CREDENTIALS',
-                    usernameVariable: 'HARBOR_USER',
-                    passwordVariable: 'HARBOR_PASS'
-                )]) {
-                    script {
-                        try {
-                            IMAGE_TAG = ''
-                            if (fileExists('.version.txt')) {
-                                IMAGE_TAG = readFile('.version.txt').trim()
-                            } else {
-                                IMAGE_TAG = "${env.BUILD_NUMBER}"
-                            }
-                            env.IMAGE_TAG = IMAGE_TAG
+                script {
+                    IMAGE_TAG = fileExists('.version.txt') ? readFile('.version.txt').trim() : "${env.BUILD_NUMBER}"
+                    env.IMAGE_TAG = IMAGE_TAG
 
-                            sh '''
-                                echo "📋 Docker version:"
-                                docker version
+                    def IMAGE_FULL_NAME = "${env.IMAGE_REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
 
-                                echo "🐳 Building Docker image..."
-                                docker build -t ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+                    sh """
+                        echo "📋 Docker version:"
+                        docker version
 
-                                echo "🔐 Logging in to Harbor registry..."
-                                echo "$HARBOR_PASS" | docker login -u $HARBOR_USER --password-stdin ${HARBOR_REGISTRY}
+                        echo "🐳 Building Docker image..."
+                        docker build -t ${IMAGE_FULL_NAME} -f Dockerfile .
 
-                                echo "📦 Pushing Docker image to Harbor..."
-                                docker push ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
+                        echo "📦 Pushing Docker image to local registry..."
+                        docker push ${IMAGE_FULL_NAME}
 
-                                echo "✅ Image pushed successfully: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}"
-                            '''
-                        } catch (Exception e) {
-                            error("Failed to build or push Docker image: ${e.getMessage()}")
-                        }
-                    }
+                        echo "✅ Image pushed successfully: ${IMAGE_FULL_NAME}"
+                    """
                 }
             }
         }
+
 
         stage('Update Kubernetes Manifest') {
             when { expression { params.confirmProcess == 'Yes' } }
@@ -171,7 +153,7 @@ pipeline {
 
                         // แทนที่ VERSION ในไฟล์ deployment.yaml ด้วย Image Tag จริง
                         sh """
-                            sed -i 's|harbor.local.com/test-registry/test-images:VERSION|harbor.local.com/test-registry/test-images:${IMAGE_TAG}|g' deployment.yaml
+                            sed -i 's|image: .*|image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' deployment.yaml
                         """
 
                         // Commit & Push การเปลี่ยนแปลง
