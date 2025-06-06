@@ -6,9 +6,9 @@ pipeline {
     }
     
     environment {
-        IMAGE_REGISTRY = '172.30.10.11:5000' // หรือ port registry ที่คุณใช้จริง เช่น 5000
+        IMAGE_REGISTRY = '172.30.10.11:5000' // ปรับเป็น registry ที่ใช้จริง
         IMAGE_NAME = 'test-images'
-        IMAGE_PROJECT = 'test-registry' // ถ้าไม่ได้แยก project prefix ใน registry นี้ ให้ลบ
+        IMAGE_PROJECT = 'test-registry' // ถ้าไม่ใช้ project prefix ให้ลบบรรทัดนี้
         DOCKER_HOST = "unix:///var/run/docker.sock"
     }
 
@@ -42,7 +42,8 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
+                // ดึงโค้ดจาก GitHub Repo ที่กำหนด
+                git url: 'https://github.com/Pittayasr/learn-jenkins-app.git', branch: 'main'
             }
         }
 
@@ -91,7 +92,6 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 sh '''
-                    # ตรวจสอบว่ามีไฟล์ .version.txt จริงหรือไม่
                     if [ -f .version.txt ]; then
                         VERSION=$(cat .version.txt)
                         cp build.tar.gz build-v$VERSION.tar.gz
@@ -137,37 +137,32 @@ pipeline {
             }
         }
 
-
         stage('Update Kubernetes Manifest') {
             when { expression { params.confirmProcess == 'Yes' } }
             steps {
                 script {
-                    // กำหนดค่าตัวแปร
                     def MANIFEST_REPO = "https://gitlab.com/Pittayasr/k8s-manifests.git"
-                    def GIT_CREDS = "GITLAB_CREDENTIALS" // Credential ของ Git ใน Jenkins
-                    def IMAGE_TAG = readFile('.version.txt').trim() // หรือใช้ env.BUILD_NUMBER
+                    def GIT_CREDS = "GITLAB_CREDENTIALS"
+                    def IMAGE_TAG = readFile('.version.txt').trim()
 
-                    // Clone Kubernetes Manifests Repo
                     dir('k8s-manifests') {
                         git url: MANIFEST_REPO, credentialsId: GIT_CREDS, branch: 'main'
 
-                        // แทนที่ VERSION ในไฟล์ deployment.yaml ด้วย Image Tag จริง
                         sh """
                             sed -i 's|image: .*|image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g' deployment.yaml
                         """
 
-                        // Commit & Push การเปลี่ยนแปลง
                         withCredentials([usernamePassword(
                             credentialsId: GIT_CREDS,
                             usernameVariable: 'GIT_USER',
                             passwordVariable: 'GIT_PASSWORD'
                         )]) {
                             sh '''
-                                        git config user.name "Jenkins Bot"
-                                        git config user.email "jenkins@example.com"
-                                        git add deployment.yaml
-                                        git diff --cached --quiet || git commit -m "[Jenkins] Update image to '$IMAGE_TAG'"
-                                        git push https://$GIT_USER:$GIT_PASSWORD@gitlab.com/Pittayasr/k8s-manifests.git HEAD:main
+                                git config user.name "Jenkins Bot"
+                                git config user.email "jenkins@example.com"
+                                git add deployment.yaml
+                                git diff --cached --quiet || git commit -m "[Jenkins] Update image to '$IMAGE_TAG'"
+                                git push https://$GIT_USER:$GIT_PASSWORD@gitlab.com/Pittayasr/k8s-manifests.git HEAD:main
                             '''
                         }
                     }
